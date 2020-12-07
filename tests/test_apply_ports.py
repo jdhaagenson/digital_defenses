@@ -17,18 +17,6 @@ sys.dont_write_bytecode = True
 
 PKG_NAME = 'apply_ports'
 
-class Capturing(list):
-    """Context manager for capturing stdout from function call"""
-
-    def __enter__(self):
-        self._stdout = sys.stdout
-        sys.stdout = self._stringio = StringIO()
-        return self
-
-    def __exit__(self, *args):
-        self.extend(self._stringio.getvalue().splitlines())
-        del self._stringio # free up some memory
-        sys.stdout = self._stdout
 
 class TestApplyPorts(unittest.TestCase):
 
@@ -68,19 +56,7 @@ class TestApplyPorts(unittest.TestCase):
             msg="The apply_port_exclusions function is missing"
         )
 
-    def test_order(self):
-        """Out of order inputs should not have different outputs"""
-        apply_port_exclusions = apply_ports.apply_port_exclusions
-        solution = [[22, 23], [80, 80], [8000, 8079], [8081, 9000]]
-        out_of_order = apply_port_exclusions([[80, 80], [22, 23], [8000, 9000]],
-                                         [[1024, 1024], [8080, 8080]])
-        self.assertListEqual(out_of_order, solution, f"Expected {solution}, got {out_of_order}")
-        in_order = apply_port_exclusions([[8000, 9000], [80, 80], [22, 23]],
-                                             [[1024, 1024], [8080, 8080]])
-        self.assertListEqual(in_order, out_of_order, f"Expected {in_order} == {out_of_order}. "
-                                                 f"You are getting different output with different order of same params"
-                         )
-
+        
     def test_empty_include(self):
         """
         Checks for handling empty include_ports input

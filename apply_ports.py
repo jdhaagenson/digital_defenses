@@ -3,45 +3,75 @@
 import argparse
 import sys
 
-from more_itertools import flatten
+from more_itertools import flatten, consecutive_groups
 
-def combine_overlap(port1, port2):
-    ports = []
-    if port1[0] <= port2[0] <= port2[1] <= port1[1]:
-        ports.append(port1)
-    if port2[0] <= port1[0] <= port1[1] <= port2[1]:
-        ports.append(port2)
-    if port1[0] <= port2[0] <= port1[1] <= port2[1]:
-        ports.append([port1[0], port2[1]])
-    if port2[0] <= port1[0] <= port2[1] <= port1[1]:
-        ports.append([port2[0], port1[1]])
+from more_itertools import consecutive_groups
 
 
-def group(portlist):
-    plist = [i for i in flatten(portlist)]
-    result = []
-    a = b = plist[0]
-    for i in plist[1:]:
-        if i == b+1:
-            b = i
-        else:
-            result.append(a if a == b else [a, b])
-            a = b = i
-    result.append(a if a == b else [a, b])
+def list_to_set(ports:list):
+    """
+    Converts a list of lists into a set, containing all numbers between each min and max value
+    :param ports: list of ports to convert
+    :type ports: list[list]
+    :return: set of ports
+    :rtype: set
+    """
+    result = set()
+    for port in ports:
+        for num in range(port[0], port[1]+1):
+            result.add(num)
     return result
 
 
-# def merge(exclude_ports):
-#     exclude_ports.sort()
-#     for i in range(len(exclude_ports)):
-#         # if exclude_ports[i][0] < exclude_ports[i + 1][0] < exclude_ports[i + 1][1] < exclude_ports[i][1]:
-#             return exclude_ports[i]
-#     return exclude_ports
-
-
-def remove_doubles(ports):
+def group(ports):
+    """
+    Groups numbers that are consecutive and then reduces them to the min and max for each group
+    :param ports: ports included
+    :type ports: list
+    :return: included ports in min-max format
+    :rtype: list[list]
+    """
     result = []
-    result = [x for x in ports if x not in result]
+    grouped = [list(num) for num in consecutive_groups(ports)]
+    for i in grouped:
+        result.append([min(i), max(i)])
+    result.sort()
+    return result
+
+
+def remove_irrelevant(include, exclude):
+    not_used = set()
+    for i in include:
+        for j in exclude:
+            if j[0] in range(i[0], i[1] + 1):
+                pass
+            if j[1] in range(i[0], i[1] + 1):
+                pass
+            else:
+                not_used.add([j[0], j[1]])
+    return not_used
+
+
+def apply_port_exclusions(include_ports, exclude_ports):
+    """
+    Applies exclusions to a list of included ports.
+    :param include_ports: ports to include
+    :type include_ports: list[list]
+    :param exclude_ports: ports to exclude
+    :type exclude_ports: list[list]
+    :return: modified list of included ports minus the excluded ports
+    :rtype: list[list]
+    """
+    if len(include_ports) == 0:
+        return []
+    irrelevant = remove_irrelevant(include_ports, exclude_ports)
+    include = list_to_set(include_ports)
+    exclude = list_to_set(exclude_ports)
+    # include.add(irrelevant)
+    ports = include.symmetric_difference(exclude)
+    portslist = list(ports)
+    portslist.sort()
+    result = group(portslist)
     return result
 
 
@@ -50,44 +80,14 @@ def validate_input(ports):
     Validates that ports are in correct format
     :param ports: list of lists
     :type ports: list[list]
-    :return: bool
-    :rtype:
+    :return: whether or not length is correct
+    :rtype: bool
     """
     for i in ports:
         if len(i) == 2 or len(i) == 0:
             return True
         else:
             return False
-
-
-def apply_port_exclusions(include_ports: list, exclude_ports: list):
-    """
-    Removes excluded ports from included ports.
-    :param include_ports: list of list pairs indicating included ports
-    :type include_ports: list[list]
-    :param exclude_ports: list of list pairs indicating ports to be excluded
-    :type exclude_ports: list[list]
-    :return: minimized list of included port ranges
-    """
-    ports = []
-    # sort ports
-    include_ports.sort()
-    include_ports = remove_doubles(include_ports)
-    # get rid of overlapping ports and sort
-    for i in range(1, len(exclude_ports)):
-        exclude_ports = combine_overlap(exclude_ports[i-1], exclude_ports[i])
-    # iterate through include ports and only modify the includes with excludes that conflict
-    for i in include_ports:
-        for j in exclude_ports:
-            if j[0] in range(i[0], i[1]+1):
-                ports.append([i[0], j[0]-1])
-            if j[1] in range(i[0], i[1]+1):
-                ports.append([j[1]+1, i[1]])
-            else:
-                ports.append([i[0], i[1]])
-    # make sure they are still sorted
-    ports.sort()
-    return ports
 
 
 def create_parser():
@@ -117,9 +117,13 @@ def main(args):
 
     try:
         if validate_input(ns.include_ports) and validate_input(ns.exclude_ports):
-            apply_port_exclusions(ns.include_ports, ns.exclude_ports)
+            test = apply_port_exclusions(ns.include_ports, ns.exclude_ports)
+            print("Output after applying exclusions: ")
+            print(test)
     except ValueError:
         print("Invalid input")
 
-# if __name__ == '__main__':
-#     main(sys.argv[1:])
+if __name__ == '__main__':
+    main(sys.argv[1:])
+
+
