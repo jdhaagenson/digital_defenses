@@ -1,19 +1,20 @@
 #!/usr/bin/env python3.8
 
-from more_itertools import flatten
 import argparse
 import sys
 
+from more_itertools import flatten
 
 def combine_overlap(port1, port2):
+    ports = []
     if port1[0] <= port2[0] <= port2[1] <= port1[1]:
-        return port1
+        ports.append(port1)
     if port2[0] <= port1[0] <= port1[1] <= port2[1]:
-        return port2
+        ports.append(port2)
     if port1[0] <= port2[0] <= port1[1] <= port2[1]:
-        return [port1[0], port2[1]]
+        ports.append([port1[0], port2[1]])
     if port2[0] <= port1[0] <= port2[1] <= port1[1]:
-        return [port2[0], port1[1]]
+        ports.append([port2[0], port1[1]])
 
 
 def group(portlist):
@@ -40,11 +41,7 @@ def group(portlist):
 
 def remove_doubles(ports):
     result = []
-    for i in ports:
-        if i[0] == i[1]:
-            result.append([i[0]])
-        else:
-            result.append(i)
+    result = [x for x in ports if x not in result]
     return result
 
 
@@ -100,8 +97,8 @@ def create_parser():
     :rtype: argparse.ArgumentParser
     """
     parser = argparse.ArgumentParser()
-    parser.add_argument('include_ports', default=[], type=list, help='ports to include')
-    parser.add_argument('exclude_ports', default=[], type=list, help='ports to exclude')
+    parser.add_argument('include_ports', help='ports to include')
+    parser.add_argument('exclude_ports', help='ports to exclude')
     return parser
 
 
@@ -124,7 +121,5 @@ def main(args):
     except ValueError:
         print("Invalid input")
 
-
-
-if __name__ == '__main__':
-    main(sys.argv[1:])
+# if __name__ == '__main__':
+#     main(sys.argv[1:])

@@ -8,17 +8,18 @@ import importlib
 import inspect
 import sys
 import unittest
-import apply_ports
 from io import StringIO
+
+import apply_ports
 
 # suppress __pycache__ and .pyc files
 sys.dont_write_bytecode = True
 
 PKG_NAME = 'apply_ports'
 
-
 class Capturing(list):
     """Context manager for capturing stdout from function call"""
+
     def __enter__(self):
         self._stdout = sys.stdout
         sys.stdout = self._stringio = StringIO()
@@ -29,8 +30,7 @@ class Capturing(list):
         del self._stringio # free up some memory
         sys.stdout = self._stdout
 
-
-class TestMain(unittest.TestCase):
+class TestApplyPorts(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
@@ -53,10 +53,6 @@ class TestMain(unittest.TestCase):
         self.exclude = [[22, 22], [45, 47], [8080, 8080], [843, 855]]
         self.correct_output = [[30, 44], [800, 842], [856, 899], [8000, 8079], [8081, 9000]]
 
-    def test_main(self):
-        with Capturing() as output:
-            apply_ports.main([self.include, self.exclude])
-        self.assertIsInstance(output, list)
 
     def test_apply_port_exclusions(self):
         """
